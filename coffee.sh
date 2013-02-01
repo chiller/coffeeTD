@@ -1,0 +1,1 @@
+coffee -cwj ./script.js *.coffee
