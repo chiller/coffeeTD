@@ -170,6 +170,14 @@
 
     TdApp.prototype.towers = [];
 
+    TdApp.prototype.lives = 15;
+
+    TdApp.prototype.score = 0;
+
+    TdApp.prototype.towerscnt = 10;
+
+    TdApp.prototype.random_bug = 0.01;
+
     TdApp.prototype.main = function() {
       this.createCanvas();
       this.startNewGame();
@@ -193,7 +201,7 @@
           e = _ref[_i];
           e.update();
         }
-        _this.clearDead();
+        _this.clearBugs();
         _ref1 = _this.entities;
         for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
           e = _ref1[_j];
@@ -219,26 +227,47 @@
             e.draw();
           }
         }
-        if (!_this.terminateRunLoop) {
+        $("#lives").html(_this.lives);
+        $("#score").html(_this.score);
+        $("#towers").html(_this.towerscnt);
+        $("#diff").html(Math.round(_this.random_bug * 100));
+        if (!(_this.terminateRunLoop || !_this.lives)) {
           return _this.runLoop();
         }
       }, this.timeout);
     };
 
     TdApp.prototype.randomSpawn = function() {
-      if (Math.random() < 0.01) {
-        return this.entities.push(new Bug(this.context, 100, 100, this.route, Math.round(Math.random() * 15).toString()));
+      if (Math.random() < this.random_bug) {
+        this.entities.push(new Bug(this.context, 100, 100, this.route, Math.round(Math.random() * 15).toString()));
+        return this.random_bug += 0.001;
       }
     };
 
-    TdApp.prototype.clearDead = function() {
-      var e;
+    TdApp.prototype.clearBugs = function() {
+      var e, route_last, _i, _j, _len, _len1, _ref, _ref1;
+      _ref = this.entities;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        e = _ref[_i];
+        if (e.hp <= 0) {
+          this.score += 10;
+        }
+      }
+      route_last = this.route.points[this.route.points.length - 1];
+      _ref1 = this.entities;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        e = _ref1[_j];
+        if (route_last[0] === e.x && route_last[1] === e.y) {
+          e.hp = 0;
+          this.lives -= 1;
+        }
+      }
       return this.entities = (function() {
-        var _i, _len, _ref, _results;
-        _ref = this.entities;
+        var _k, _len2, _ref2, _results;
+        _ref2 = this.entities;
         _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          e = _ref[_i];
+        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+          e = _ref2[_k];
           if (e.hp > 0) {
             _results.push(e);
           }
@@ -282,7 +311,10 @@
         return _this.entities.push(new Bug(_this.context, 100, 100, _this.route, Math.round(Math.random() * 15).toString()));
       });
       return $("#canvas").bind('click', function(event) {
-        return _this.towers.push(new Tower(_this.context, event.layerX, event.layerY));
+        if (_this.towerscnt > 0) {
+          _this.towers.push(new Tower(_this.context, event.layerX, event.layerY));
+          return _this.towerscnt -= 1;
+        }
       });
     };
 

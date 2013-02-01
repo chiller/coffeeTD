@@ -76,7 +76,8 @@ class Tower
 
 
 class TdApp
-  timeout: 50, towers: []
+  timeout: 50, towers: [], lives: 15, score: 0, towerscnt: 10
+  random_bug: 0.01
   main: ->
     @createCanvas()
     @startNewGame()
@@ -93,7 +94,7 @@ class TdApp
       # Update position of entities
       @randomSpawn()
       e.update() for e in @entities
-      @clearDead()
+      @clearBugs()
       e.clean = true for e in @entities
       # Clear the Canvas
       @clearCanvas()
@@ -104,15 +105,27 @@ class TdApp
       tower.draw() for tower in @towers
       e.draw() for e in @entities when e.hp > 0
       
-      @runLoop() unless @terminateRunLoop
+      $("#lives").html @lives
+      $("#score").html @score
+      $("#towers").html @towerscnt
+      $("#diff").html Math.round(@random_bug*100)
+      @runLoop() unless @terminateRunLoop or not @lives
     , @timeout
 
   randomSpawn: ->
-    if Math.random() < 0.01 then @entities.push(new Bug @context, 100, 100, @route, Math.round(Math.random()*15).toString())
+    if Math.random() < @random_bug 
+      @entities.push(new Bug @context, 100, 100, @route, Math.round(Math.random()*15).toString())
+      @random_bug += 0.001
       
-  clearDead: ->
+  clearBugs: ->
+    @score+=10 for e in @entities when e.hp <= 0
+    route_last = @route.points[@route.points.length - 1]
+    for e in @entities
+      if route_last[0] == e.x and route_last[1] == e.y 
+        e.hp = 0
+        @lives -= 1
     @entities = (e for e in @entities when e.hp > 0)
-
+    
   drawField: ->
     @context.fillStyle = 'rgba(200,150,150,0.2)'
     @context.fillRect 50, 50, 600, 300
@@ -132,8 +145,10 @@ class TdApp
     $(".plus").click => @timeout = @timeout/2
     $(".minus").click => @timeout = @timeout*2
     $(".spawn").click => @entities.push(new Bug @context, 100, 100, @route, Math.round(Math.random()*15).toString())
-    $("#canvas").bind 'click', (event) => @towers.push(new Tower @context, event.layerX, event.layerY)
-
+    $("#canvas").bind 'click', (event) => 
+      if @towerscnt > 0
+        @towers.push(new Tower @context, event.layerX, event.layerY)
+        @towerscnt -= 1
 window.onload = ->
     window.td = new TdApp
     window.td.main()
